@@ -1,0 +1,187 @@
+ESXi ks-esxi<Version>.cfg Documentation
+
+Date: 10.10.2014
+Version: 1.0.5
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+# Network Settings
+network --addvmportgroup=0 --device=vmnic0 --bootproto=static --ip=10.10.10.63 --netmask=255.255.255.0 --gateway=10.10.10.99 --nameserver=10.10.10.13 --hostname=esx1.lab.local
+
+# Globale Einstellungen
+accepteula
+autopart --firstdisk --overwritevmfs
+
+## Version 4:
+autopart --firstdisk --overwritevmfs
+install url http://<IP VI Template Server>/pxe/img/esxi<Version>
+
+##Version 5/6:
+install --firstdisk --overwritevmfs
+
+rootpw --iscrypted $1$.GHR5xXdkPXP82lYuh1jMColrnDdq1
+reboot
+
+
+### Version 5/6: 
+%firstboot --interpreter=busybox 
+### Version 4: 
+%firstboot --unsupported --interpreter=busybox --level=998
+
+vitempsrv=10.10.10.60
+vipath="/store/VI"
+mkdir $vipath
+esxitree="esxi<Version>"
+vitempmount="/opt/fsi/inst/esxi<Version>/ks"
+viconf="$vipath/viconf.sh"
+
+echo vipath=$vipath >$viconf
+echo viconf=$viconf >>$viconf
+echo vitempsrv=$vitempsrv >>$viconf
+echo vitempmount=$vitempmount >>$viconf
+
+esxcfg-nas -a nfs_fsi_$esxitree -o $vitempsrv -s $vitempmount
+. /vmfs/volumes/nfs_fsi_$esxitree/customize.sh
+
+#esxenv: idsdev
+
+#log: trace
+
+#lic: 12345-67890-76543-07WAH-AM24N
+
+## Virtual Center Config - use two \ for domain user
+#vc: vCwin.lab.local
+#vcusr: labdom\\esxuser
+#vcpass: fkjasöfjkaöfljaödlfa
+#husr: root
+#hpass: fjadsölfjasöflkjasö
+#dc: VI Develop
+
+
+##ipv6: true  - default false
+#ipv6: false
+
+
+#Key : Role: Privileges
+#role: IAP : Host.Config.Maintenance Host.Config.Power VirtualMachine.Interact.ConsoleInteract VirtualMachine.Interact.PowerOff VirtualMachine.Interact.PowerOn VirtualMachine.Interact.Reset
+
+#Key : Name  : PW hash                                    : Group : Description                 : User Dir : Role
+#user: admin : $1$sVy3Z/PX$ohN8zFfP5uGvXgZ1zeNEX.         : root  : VI Team User                : no       : IAP
+#user: administrator : $1$M7rwWYjR$hewZ1v7xBiPX4k7JxbK3q0 : root  : Support Team User 
+#user: admin2 : $1$M7rwWYjR$hewZ1v7xBiPX4k7JxbK3q0        : root  :                             : yes  
+#user: admin3 : $1$M7rwWYjR$hewZ1v7xBiPX4k7JxbK3q0
+#user: admin3 : $1$M7rwWYjR$hewZ1v7xBiPX4k7JxbK3q0        :       :                             :          : IAP
+
+
+## Syslog Config
+
+### Version 4: 
+#syssrv: 10.10.10.60
+#sysport: 514
+
+##   Option   Description
+##   Syslog.global.logDir    
+##   A location on a local or remote datastore and path where logs are saved to. Has the format [DatastoreName] DirectoryName/Filename, which maps 
+##   to /vmfs/volumes/DatastoreName/DirectoryName/Filename. The [DatastoreName] is case sensitive and if the specified DirectoryName does not exist, 
+##   it will be created. If the datastore path field is blank, the logs are only placed in their default location. If /scratch is defined, the default 
+##   is []/scratch/log. For more information on scratch, see Creating a persistent scratch location for ESXi (1033696). For all other cases, the default is blank.
+##   Syslog.global.logHost   
+##   A remote server where logs are sent using the syslog protocol. If the logHost field is blank, no logs are forwarded. Include the protocol and 
+##   port, similar to tcp://hostname:514 or udp://hostname:514
+##   Syslog.global.logDirUnique    
+##   A boolean option which controls whether a host-specific directory is created within the configured logDir. The directory name is the hostname 
+##   of the ESXi host. A unique directory is useful if the same shared directory is used by multiple ESXi hosts. Defaults to false.
+##   Syslog.global.defaultRotate   
+##   The maximum number of log files to keep locally on the ESXi host in the configured logDir. Does not affect remote syslog server retention. Defaults to 8.
+##   Syslog.global.defaultSize
+##   The maximum size, in kilobytes, of each local log file before it is rotated. Does not affect remote syslog server retention. Defaults to 1024 KB. 
+##   For more information on sizing, see Providing Sufficient Space for System Logging.
+
+##Default Port: 514
+##Default Protocol: udp
+#syssrv: 10.10.10.63 : : tcp
+#syssrv: 10.10.10.64 : :
+#syssrv: 10.10.10.65
+#syssrv: 10.10.10.60 : 514 : udp 
+#syssrv: 10.10.10.243 : 666 : tcp 
+
+
+#ntpsrv: 10.10.10.244
+#ntpsrv: 10.10.10.245
+
+#key  storeage name  server        export
+#nfs: qnap1 :  10.10.10.245 :  /nfstest
+#nfs: temp : 10.10.10.60 : /nfs-esxi
+#nfs: vitemp_logesxi : 10.10.10.60 : /logesxi
+#nfs: qnap1 :  10.10.10.245 :  /getned
+
+#key: sw.nr: vmnic-list: loadbalance type: mtu
+#vsw: 0 : vmnic0 _vmnic1 : loadbalance_ip :  
+#vsw: 1 : vmnic2 -vmnic3 : loadbalance_srcid :  
+#vsw: 2 : vmnic4 vmnic5 : failover_explicit :  
+
+### Load Balance Types:
+###  - Port ID = loadbalance_srcid      
+###  - IP Hash = loadbalance_ip         
+###  - MAC = loadbalance_srcmac         
+###  - Failover Only = failover_explicit
+           
+#key: sw.nr: vlan: ip:             netmask:        gateway:      flags: mtu:   used nics:                loadbalance       : comment flag to portgroup 
+#vmk: 0    : 23  : 10.10.11.173  : 255.255.255.0 : 10.10.11.99 :      : 3000 : -vmnic1 vmnic0          :                   : i  
+#vmk: 0    : 25  : 10.10.111.173 : 255.255.255.0 : 10.10.11.99 : t    : 3000 : -vmnic1                 : loadbalance_srcid : i  
+#vmk: 0    : 10  : 10.10.12.173  : 255.255.255.0 :             : t    : 9000 : _vmnic1                 :                   : i n 
+#vmk: 1    : 220 : 10.10.13.173  : 255.255.255.0 : 10.10.13.99 :      :      : _vmnic3 -vmnic4
+#vmk: 1    : 223 : 10.10.14.173  : 255.255.255.0 : 10.10.14.99 : f t  :      : _vmnic2 +vmnic3 -vmnic4 : :
+
+#key: vlan: flags: default gate: mtu  : nics              : comment
+#vmm: 0   : m f  : 10.10.10.99 : 3000 : +vmknic0 _vmknic1 : nativ
+##vmm::m
+
+#key: sw.nr: vlan: used nics: mtu: loadbalance : comment flag to portgroup
+#vmn: 0 : 470 : -vmnic1 : 3000 : loadbalance_srcid : i
+#vmn: 0 : 370 : _vmnic1 : : : test
+#vmn: 0 : 570 : +vmnic1 : : loadbalance_ip
+#vmn: 0 : 670
+#vmn: 1 : 380 : _vmnic1
+#vmn: 1 : 580 : +vmnic1 : : loadbalance_ip
+#vmn: 1 : 680
+
+## Log location and rotation = if no rotate / size, nothing configure
+### Version 5:
+##key    pfad                                 rotate number to keep   size KiB  : unique dir
+#logloc: /vmfs/volumes/nfs_vitemp_logesxi/ :  5                     : 2048      : true
+##logloc: /vmfs/volumes/nfs_vitemp_logesxi/ :  10 : : false
+##logloc: /vmfs/volumes/nfs_vitemp_logesxi/ : : 2048 :
+##Dir Create = standard true
+
+### Version 4:
+#logloc: [nfs_vitemp_logesxi] /esx1-messages
+
+
+#scratch: /vmfs/volumes/loc_esx1/scratchdir/
+
+#key:    advopt:                      type : option:
+#advopt: Net.TcpipHeapSize          : long : 30
+#advopt: Net.TcpipHeapMax           : long : 120
+#advopt: NFS.MaxVolumes             : long : 64
+#advopt: NFS.HeartbeatMaxFailures   : long : 10
+#advopt: NFS.HeartbeatFrequency     : long : 12
+#advopt: NFS.HeartbeatTimeout       : long : 5
+
+
+#syspar: fdm : 10 : 3100 
+#syspar: hostd : 30 : 2024 
+#syspar: vmkernel : 8 : 2000 
+#syspar: vpxa : 8 : 4196 
+
+#log: trace 
+
+#virthw: vm 
+
+#maintenance: enable 
+
+## Enable local shell - enable=default, disable
+#local: enable
+
+## Enable ssh - enable=default, disable
+#ssh: enable
+
